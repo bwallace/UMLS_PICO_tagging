@@ -91,3 +91,6 @@ def main():
     y_tmp = [lbl_f(y_i) for y_i in y]
 
     history = m.model.fit({'word_input':X_text, 'CUI_input':X_CUI, 'output':y_tmp})
+
+if __name__ == '__main__':
+    main()
