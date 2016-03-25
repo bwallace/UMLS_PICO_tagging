@@ -118,7 +118,10 @@ def main(fold_num):
                             'CUI_input':X_CUI[train], 
                             'output':y_tmp[train]}, nb_epoch=1)
 
-    predictions = m.model.predict({'word_input':X_text[test], 'CUI_input':X_CUI[test]})
+    predictions = m.model.predict({'word_input':X_text[test], 
+                                    'CUI_input':X_CUI[test]},
+                                    batch_size=32)
+
 
     with open("fold_%s_predictions.pickle" % fold_num, 'w')  as output_f:
         pickle.dump(predictions, output_f)
