@@ -1,16 +1,20 @@
 '''
 Run the fancy model.
 '''
-
+import sys
 import pickle
 #import unicodecsv as csv
 import csv
 import itertools
 #import unidecode
 
+
 import numpy as np 
 import cPickle as pickle
 import networkx as nx
+
+import sklearn 
+from sklearn.cross_validation import StratifiedKFold
 
 import gensim
 from gensim.models import Word2Vec
@@ -33,7 +37,8 @@ def load_token_vectors(path="/Users/byron/dev/Deep-PICO/PubMed-w2v.bin"):
     m = Word2Vec.load_word2vec_format(path, binary=True)
     return m 
 
-def main():
+def main(fold_num):
+
     # load the data
     with open('cui_data_sent.csv', 'r') as f:
         r = csv.DictReader(f)
@@ -86,11 +91,42 @@ def main():
     X_text = p.build_text_sequences(texts)
     X_CUI  = p.build_CUI_sequences(ancestors)
 
+    # and labels
     ### temp!!!
     lbl_f = lambda y_i : [0, 1] if y_i == "interventions" else [1, 0]
-    y_tmp = [lbl_f(y_i) for y_i in y]
+    y_tmp = np.array([lbl_f(y_i) for y_i in y])
 
-    history = m.model.fit({'word_input':X_text, 'CUI_input':X_CUI, 'output':y_tmp})
+    # cross-fold validation; setup to parallelize
+    # assume that we are only running fold n_fold
+    # here
+    n_folds = 5
+    import pdb; pdb.set_trace()
+    skf = list(StratifiedKFold(y, n_folds=n_folds, shuffle=True, random_state=1337))
+    train, test = skf[fold_num]
+
+
+    # dump
+    with open("fold_%s_train_ids.pickle" % fold_num, 'w') as output_f:
+        pickle.dump(train, output_f)
+
+    with open("fold_%s_test_ids.pickle" % fold_num, 'w') as output_f:
+        pickle.dump(test, output_f)
+
+    history = m.model.fit({'word_input':X_text[train], 
+                            'CUI_input':X_CUI[train], 
+                            'output':y_tmp[train]}, nb_epoch=1)
+
+    predictions = m.predict({'word_input':X_text[test], 'CUI_input':X_CUI[test]})
+
+    with open("fold_%s_predictions.pickle" % fold_num, 'w')  as output_f:
+        pickle.dump(predictions, output_f)
+
 
 if __name__ == '__main__':
-    main()
+    #
+    if len(sys.argv) > 1:
+        fold = int(sys.argv[1])
+        print "running fold: %s" % fold 
+
+
+    main(fold)
