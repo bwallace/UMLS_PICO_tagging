@@ -1,6 +1,7 @@
 '''
 Run the fancy model.
 '''
+import pdb 
 import sys
 import pickle
 #import unicodecsv as csv
@@ -14,7 +15,7 @@ import cPickle as pickle
 import networkx as nx
 
 import sklearn 
-from sklearn.cross_validation import StratifiedKFold
+from sklearn.cross_validation import KFold, StratifiedKFold
 
 import gensim
 from gensim.models import Word2Vec
@@ -100,8 +101,9 @@ def main(fold_num):
     # assume that we are only running fold n_fold
     # here
     n_folds = 5
-    import pdb; pdb.set_trace()
-    skf = list(StratifiedKFold(y, n_folds=n_folds, shuffle=True, random_state=1337))
+    #import pdb; pdb.set_trace()
+    #pdb.set_trace()
+    skf = list(KFold(len(y_tmp), n_folds=n_folds, shuffle=True, random_state=1337))
     train, test = skf[fold_num]
 
 
@@ -116,7 +118,7 @@ def main(fold_num):
                             'CUI_input':X_CUI[train], 
                             'output':y_tmp[train]}, nb_epoch=1)
 
-    predictions = m.predict({'word_input':X_text[test], 'CUI_input':X_CUI[test]})
+    predictions = m.model.predict({'word_input':X_text[test], 'CUI_input':X_CUI[test]})
 
     with open("fold_%s_predictions.pickle" % fold_num, 'w')  as output_f:
         pickle.dump(predictions, output_f)
