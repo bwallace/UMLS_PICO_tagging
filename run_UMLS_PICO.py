@@ -16,6 +16,7 @@ import networkx as nx
 
 import sklearn 
 from sklearn.cross_validation import KFold, StratifiedKFold
+from sklearn.feature_extraction.text import CountVectorizer
 
 import gensim
 from gensim.models import Word2Vec
@@ -94,8 +95,20 @@ def main(fold_num):
 
     # and labels
     ### temp!!!
-    lbl_f = lambda y_i : [0, 1] if y_i == "interventions" else [1, 0]
-    y_tmp = np.array([lbl_f(y_i) for y_i in y])
+    #lbl_f = lambda y_i : [0, 1] if y_i == "interventions" else [1, 0]
+    #y_tmp = np.array([lbl_f(y_i) for y_i in y])
+    
+    # merge 'primary' and 'secondary' outcomes
+    lbl_f = lambda y_i : "outcome" if "outcome" in y_i else y_i
+    y = [lbl_f(y_i) for y_i in y]
+
+    # create a label vectorizer 
+    lbl_vectorizer = CountVectorizer(binary=True, min_df=1)
+    y_mat = lbl_vectorizer.fit_transform(y).todense()
+
+    # dump the vectorizer
+    with open("y_vectorizer_%s" % fold_num, 'w') as output_f:
+        pickle.dump(lbl_vectorizer, output_f)
 
     # cross-fold validation; setup to parallelize
     # assume that we are only running fold n_fold
@@ -116,16 +129,19 @@ def main(fold_num):
 
     history = m.model.fit({'word_input':X_text[train], 
                             'CUI_input':X_CUI[train], 
-                            'output':y_tmp[train]}, nb_epoch=1)
+                            'output':y_mat[train,:]}, nb_epoch=1)
+                            #'output':y_tmp[train]}, nb_epoch=1)
 
     predictions = m.model.predict({'word_input':X_text[test], 
                                     'CUI_input':X_CUI[test]},
-                                    batch_size=32)
+                                    batch_size=64)
 
 
     with open("fold_%s_predictions.pickle" % fold_num, 'w')  as output_f:
         pickle.dump(predictions, output_f)
 
+    with open("fold_%s_truth.pickle" % fold_num, 'w')  as output_f:
+        pickle.dump(y_mat[test,:], output_f)
 
 if __name__ == '__main__':
     #

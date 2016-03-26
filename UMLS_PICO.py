@@ -270,8 +270,16 @@ class CUI_PICO_Mapper:
         
         # and now the final classification
         
-        self.model.add_output(name='output', input='sigmoid')
+        # was (3/26)
+        #self.model.add_output(name='output', input='sigmoid')
+        self.model.add_node(Dense(4, activation='softmax'), 
+                        name='output', input='sigmoid', 
+                        create_output=True)
+
+
         print("model built")
         print(self.model.summary())
-        self.model.compile(loss={'output': 'binary_crossentropy'}, optimizer='adam')
+        #self.model.compile(loss={'output': 'binary_crossentropy'}, optimizer='adam')
+        self.model.compile(optimizer='adam', loss={'output': 'categorical_crossentropy'})
+
 
