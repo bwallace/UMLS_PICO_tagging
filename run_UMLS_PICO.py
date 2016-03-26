@@ -116,7 +116,7 @@ def main(fold_num):
     n_folds = 5
     #import pdb; pdb.set_trace()
     #pdb.set_trace()
-    skf = list(KFold(len(y_tmp), n_folds=n_folds, shuffle=True, random_state=1337))
+    skf = list(KFold(y_mat.shape[0], n_folds=n_folds, shuffle=True, random_state=1337))
     train, test = skf[fold_num]
 
 
