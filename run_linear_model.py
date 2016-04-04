@@ -61,7 +61,7 @@ def main(fold_num=0):
             csr_data.append(1)
         indptr.append(len(indices))
 
-    X_cuis = csr_matrix((csr_data, indices, indptr), shape=(len(data), 10000000))
+    X_cuis = csr_matrix((csr_data, indices, indptr), shape=(len(data), 10000000), dtype=np.int64)
 
     # and positional features
     X_pos = np.zeros(shape=(len(data), 5))
@@ -99,6 +99,8 @@ def main(fold_num=0):
                 class_weights.append({t: w for t, w in zip(targets, [w1, w2, w3])})
     parameters = {'alpha': np.logspace(-1, -20, 50),
                   'class_weight':class_weights}
+
+    clf = SGDClassifier(average=True, loss="hinge")
 
     # do the random grid search thing
     grid_search = RandomizedSearchCV(clf, param_distributions=parameters, n_iter=25, 
