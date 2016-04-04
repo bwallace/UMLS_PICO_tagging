@@ -106,10 +106,10 @@ def main(fold_num=0):
     grid_search.fit(X_train, y_train)
 
     y_hat = grid_search.predict(X_test)
-    with open("lm_predictions_%s.pickle" % s) as outf:
+    with open("lm_predictions_%s.pickle" % fold_num) as outf:
         pickle.dump(y_hat, outf)
 
-    with open("lm_y_%s.pickle" % s) as outf:
+    with open("lm_y_%s.pickle" % fold_num) as outf:
         pickle.dump(y_test, outf)
 
 
