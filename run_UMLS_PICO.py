@@ -119,6 +119,12 @@ def main(fold_num):
     skf = list(KFold(y_mat.shape[0], n_folds=n_folds, shuffle=True, random_state=1337))
     train, test = skf[fold_num]
 
+    # calculate class weights (these are to be inverse to prevalence, as estimated in training data!)
+    class_counts = np.sum(y_mat[train,:], axis=0)
+    N = float(len(train))
+    prevalences = class_counts/N
+    weights = 1.0/prevalences
+    weights_d = dict(zip(range(4), weights.tolist()[0]))
 
     # dump
     with open("fold_%s_train_ids.pickle" % fold_num, 'w') as output_f:
@@ -127,15 +133,23 @@ def main(fold_num):
     with open("fold_%s_test_ids.pickle" % fold_num, 'w') as output_f:
         pickle.dump(test, output_f)
 
+    print "using class weights!"
     history = m.model.fit({'word_input':X_text[train], 
                             'CUI_input':X_CUI[train], 
-                            'output':y_mat[train,:]}, nb_epoch=1)
+                            'output':y_mat[train,:]}, 
+                            nb_epoch=15, class_weight=weights_d)
                             #'output':y_tmp[train]}, nb_epoch=1)
 
     predictions = m.model.predict({'word_input':X_text[test], 
                                     'CUI_input':X_CUI[test]},
-                                    batch_size=64)
+                                    batch_size=128)
 
+    json_string = m.model.to_json()
+    open('model_architecture.json', 'w').write(json_string)
+
+    print "dumping weights!"
+    m.model.save_weights('model_weights_redux_%s.h5' % fold_num, overwrite=True)
+    print "done!"
 
     with open("fold_%s_predictions.pickle" % fold_num, 'w')  as output_f:
         pickle.dump(predictions, output_f)

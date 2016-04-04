@@ -163,11 +163,11 @@ class Preprocessor:
 
 class CUI_PICO_Mapper:
 
-    def __init__(self, preprocessor, filters=None, n_filters=50, dropout=0.0):
+    def __init__(self, preprocessor, filters=None, n_filters=50, dropout=0.1):
         self.preprocessor = preprocessor
 
         if filters is None:
-            self.ngram_filters = [3, 4, 5]
+            self.ngram_filters = [2, 3, 5]
         else:
             self.ngram_filters = filters 
 
