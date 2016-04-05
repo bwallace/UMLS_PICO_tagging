@@ -1,6 +1,7 @@
 '''
 Run the fancy model.
 '''
+import random
 import pdb 
 import sys
 import pickle
@@ -38,6 +39,7 @@ def load_CUI_vectors():
 def load_token_vectors(path="/Users/byron/dev/Deep-PICO/PubMed-w2v.bin"):
     m = Word2Vec.load_word2vec_format(path, binary=True)
     return m 
+
 
 def main(fold_num):
 
@@ -120,15 +122,47 @@ def main(fold_num):
     train, test = skf[fold_num]
 
     # calculate class weights (these are to be inverse to prevalence, as estimated in training data!)
-    class_counts = np.sum(y_mat[train,:], axis=0)
+    y_train = y_mat[train,:]
+    
+    class_counts = np.sum(y_train, axis=0)
     N = float(len(train))
     prevalences = class_counts/N
     weights = 1.0/prevalences
     weights_d = dict(zip(range(4), weights.tolist()[0]))
 
-    # dump
+    ''' 4/5 -- experimental '''
+    # sampling -- experimental!
+    class_instance_indices = {}
+    for lbl, j in lbl_vectorizer.vocabulary_.items():
+        indices = [idx for idx in range(y_train.shape[0]) if y_train[idx,j]>0]
+        class_instance_indices[lbl] = indices
+    
+    # 4x as many 'ignores'; this is arbitrary
+    num_population = len(class_instance_indices["population"])
+    ignore_indices = random.sample(class_instance_indices["ignore"], 10*num_population)
+    # now sample the rest evenly
+    outcome_indices = random.sample(class_instance_indices["outcome"], num_population)
+    intervention_indices = random.sample(class_instance_indices["interventions"], num_population)
+    population_indices = class_instance_indices["population"]
+
+    downsampled_train_indices = ignore_indices + outcome_indices + intervention_indices + population_indices
+    random.shuffle(downsampled_train_indices)
+
+    # dump 
     with open("fold_%s_train_ids.pickle" % fold_num, 'w') as output_f:
         pickle.dump(train, output_f)
+
+
+    train = downsampled_train_indices
+    y_train = y_mat[train,:]
+    #y_train = y_mat[downsampled_train_indices,:]
+
+
+    ###
+    # 4/4/2016 -- consider down-sampling here?
+    #import pdb; pdb.set_trace()
+
+
 
     with open("fold_%s_test_ids.pickle" % fold_num, 'w') as output_f:
         pickle.dump(test, output_f)
@@ -137,7 +171,7 @@ def main(fold_num):
     history = m.model.fit({'word_input':X_text[train], 
                             'CUI_input':X_CUI[train], 
                             'output':y_mat[train,:]}, 
-                            nb_epoch=15, class_weight=weights_d)
+                            nb_epoch=25, class_weight=weights_d)
                             #'output':y_tmp[train]}, nb_epoch=1)
 
     predictions = m.model.predict({'word_input':X_text[test], 
