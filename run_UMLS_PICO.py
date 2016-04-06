@@ -122,6 +122,8 @@ def main(fold_num):
     train, test = skf[fold_num]
 
     # calculate class weights (these are to be inverse to prevalence, as estimated in training data!)
+    
+    '''
     y_train = y_mat[train,:]
     
     class_counts = np.sum(y_train, axis=0)
@@ -129,35 +131,39 @@ def main(fold_num):
     prevalences = class_counts/N
     weights = 1.0/prevalences
     weights_d = dict(zip(range(4), weights.tolist()[0]))
+    '''
 
     ''' 4/5 -- experimental '''
     # sampling -- experimental!
     class_instance_indices = {}
     for lbl, j in lbl_vectorizer.vocabulary_.items():
-        indices = [idx for idx in range(y_train.shape[0]) if y_train[idx,j]>0]
+        #indices = [idx for idx in range(y_train.shape[0]) if y_train[idx,j]>0]
+        indices = [idx for idx in train if y_mat[idx,j]>0]
         class_instance_indices[lbl] = indices
     
     # 4x as many 'ignores'; this is arbitrary
     num_population = len(class_instance_indices["population"])
-    ignore_indices = random.sample(class_instance_indices["ignore"], 10*num_population)
+    ignore_indices = random.sample(class_instance_indices["ignore"], num_population)
     # now sample the rest evenly
     outcome_indices = random.sample(class_instance_indices["outcome"], num_population)
     intervention_indices = random.sample(class_instance_indices["interventions"], num_population)
     population_indices = class_instance_indices["population"]
 
+
     downsampled_train_indices = ignore_indices + outcome_indices + intervention_indices + population_indices
     random.shuffle(downsampled_train_indices)
+    train = downsampled_train_indices
 
     # dump 
     with open("fold_%s_train_ids.pickle" % fold_num, 'w') as output_f:
         pickle.dump(train, output_f)
 
 
-    train = downsampled_train_indices
+    
     y_train = y_mat[train,:]
     #y_train = y_mat[downsampled_train_indices,:]
 
-
+    import pdb; pdb.set_trace()
     ###
     # 4/4/2016 -- consider down-sampling here?
     #import pdb; pdb.set_trace()
