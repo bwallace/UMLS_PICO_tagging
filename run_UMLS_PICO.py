@@ -141,18 +141,30 @@ def main(fold_num):
         indices = [idx for idx in train if y_mat[idx,j]>0]
         class_instance_indices[lbl] = indices
     
-    # 4x as many 'ignores'; this is arbitrary
+    # 5x as many 'ignores' as smallest class; this is arbitrary
     num_population = len(class_instance_indices["population"])
-    ignore_indices = random.sample(class_instance_indices["ignore"], num_population)
-    # now sample the rest evenly
-    outcome_indices = random.sample(class_instance_indices["outcome"], num_population)
-    intervention_indices = random.sample(class_instance_indices["interventions"], num_population)
+    ignore_indices = random.sample(class_instance_indices["ignore"], 5*num_population)
+    outcome_indices = class_instance_indices["outcome"]
+    intervention_indices = class_instance_indices["interventions"]
     population_indices = class_instance_indices["population"]
+
+    # now sample the rest evenly
+    #outcome_indices = random.sample(class_instance_indices["outcome"], num_population)
+    #intervention_indices = random.sample(class_instance_indices["interventions"], num_population)
+    #population_indices = class_instance_indices["population"]
 
 
     downsampled_train_indices = ignore_indices + outcome_indices + intervention_indices + population_indices
     random.shuffle(downsampled_train_indices)
     train = downsampled_train_indices
+
+    y_train = y_mat[train,:]
+    
+    class_counts = np.sum(y_train, axis=0)
+    N = float(len(train))
+    prevalences = class_counts/N
+    weights = 1.0/prevalences
+    weights_d = dict(zip(range(4), weights.tolist()[0]))
 
     # dump 
     with open("fold_%s_train_ids.pickle" % fold_num, 'w') as output_f:
@@ -160,10 +172,10 @@ def main(fold_num):
 
 
     
-    y_train = y_mat[train,:]
+    #y_train = y_mat[train,:]
     #y_train = y_mat[downsampled_train_indices,:]
 
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     ###
     # 4/4/2016 -- consider down-sampling here?
     #import pdb; pdb.set_trace()
@@ -177,7 +189,7 @@ def main(fold_num):
     history = m.model.fit({'word_input':X_text[train], 
                             'CUI_input':X_CUI[train], 
                             'output':y_mat[train,:]}, 
-                            nb_epoch=25, class_weight=weights_d)
+                            nb_epoch=50, class_weight=weights_d)
                             #'output':y_tmp[train]}, nb_epoch=1)
 
     predictions = m.model.predict({'word_input':X_text[test], 
