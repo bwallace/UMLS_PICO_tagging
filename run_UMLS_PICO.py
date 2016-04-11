@@ -42,9 +42,10 @@ def load_token_vectors(path="/Users/byron/dev/Deep-PICO/PubMed-w2v.bin"):
 
 
 def main(fold_num):
-
+    random.seed(1337)
+    
     # load the data
-    with open('cui_data_sent.csv', 'r') as f:
+    with open('cui_data_sent2.csv', 'r') as f:
         r = csv.DictReader(f)
         data = [row for row in r]
         
@@ -141,9 +142,9 @@ def main(fold_num):
         indices = [idx for idx in train if y_mat[idx,j]>0]
         class_instance_indices[lbl] = indices
     
-    # 5x as many 'ignores' as smallest class; this is arbitrary
+    # 10x as many 'ignores' as smallest class; this is arbitrary
     num_population = len(class_instance_indices["population"])
-    ignore_indices = random.sample(class_instance_indices["ignore"], 5*num_population)
+    ignore_indices = random.sample(class_instance_indices["ignore"], 10*num_population)
     outcome_indices = class_instance_indices["outcome"]
     intervention_indices = class_instance_indices["interventions"]
     population_indices = class_instance_indices["population"]
