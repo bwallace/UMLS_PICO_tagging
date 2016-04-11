@@ -77,19 +77,30 @@ def main(fold_num=0):
 
     X = hstack([X_text, X_cuis, X_pos], format='csr')
 
+
     X_train = X[train_ids,:]
     X_test  = X[test_ids,:]
 
     y_train = y[train_ids]
     y_test  = y[test_ids]
 
+    import pdb; pdb.set_trace()
+    class_instance_indices = {}
+    outcome_indices = np.where(y_train == "outcome")[0]
+    interventions_indices = np.where(y_train == "interventions")[0]
+    ignore_indices = np.where(y_train == "ignore")[0]
+    population_indices = np.where(y_train == "population")[0]
+
     K=5
-    targets = ['population', 'interventions', 'outcome']
+    targets = ['ignore', 'population', 'interventions', 'outcome']
 
-    ftwo_scorer = make_scorer(fbeta_score, beta=2, labels=targets, average='macro') # favour recall a 
+    #ftwo_scorer = make_scorer(fbeta_score, beta=2, labels=targets, average='macro') # favour recall a 
+    # bcw -- making comparable to CNN approach
+    f_scorer = make_scorer(f_scorer, beta=1, labels=targets, average='macro')
 
+    
+    '''
     class_weights = []
-
     # generate hyperparameter search space
     weight_space = range(1, 50) 
 
@@ -97,18 +108,20 @@ def main(fold_num=0):
         for w2 in weight_space:
             for w3 in weight_space:
                 class_weights.append({t: w for t, w in zip(targets, [w1, w2, w3])})
-    parameters = {'alpha': np.logspace(-1, -20, 50),
-                  'class_weight':class_weights}
+    '''
 
-    clf = SGDClassifier(average=True, loss="hinge")
+    parameters = {'alpha': np.logspace(-1, -20, 50)}
+
+    clf = SGDClassifier(average=True, loss="hinge", class_weights="balanced")
 
     # do the random grid search thing
     grid_search = RandomizedSearchCV(clf, param_distributions=parameters, n_iter=25, 
-                                        verbose=3, scoring=ftwo_scorer, cv=K)
+                                        verbose=3, scoring=f_scorer, cv=K)
 
     grid_search.fit(X_train, y_train)
 
-    y_hat = grid_search.predict(X_test)
+    #y_hat = grid_search.predict(X_test)
+    y_hat = grid_search.decision_function(X_test)
     with open("lm_predictions_%s.pickle" % fold_num) as outf:
         pickle.dump(y_hat, outf)
 
