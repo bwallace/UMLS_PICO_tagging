@@ -21,7 +21,7 @@ def main(fold_num=0):
     test_ids  = pickle.load(open("fold_%s_test_ids.pickle" % fold_num))
 
     # get the data
-    with open('cui_data_sent.csv', 'r') as f:
+    with open('cui_data_sent5.csv', 'r') as f:
         r = csv.DictReader(f)
         data = [row for row in r]
         
@@ -122,10 +122,15 @@ def main(fold_num=0):
 
     #y_hat = grid_search.predict(X_test)
     y_hat = grid_search.decision_function(X_test)
-    with open("lm_predictions_%s.pickle" % fold_num) as outf:
+    with open("lm_raw_redictions_%s.pickle" % fold_num, 'w') as outf:
         pickle.dump(y_hat, outf)
 
-    with open("lm_y_%s.pickle" % fold_num) as outf:
+
+    y_hat = grid_search.predict(X_test)
+    with open("lm_predictions_%s.pickle" % fold_num, 'w') as outf:
+        pickle.dump(y_hat, outf)
+
+    with open("lm_y_%s.pickle" % fold_num, 'w') as outf:
         pickle.dump(y_test, outf)
 
 
