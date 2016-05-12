@@ -45,7 +45,7 @@ def main(fold_num):
     random.seed(1337)
     
     # load the data
-    with open('cui_data_sent2.csv', 'r') as f:
+    with open('cui_data_sent5.csv', 'r') as f:
         r = csv.DictReader(f)
         data = [row for row in r]
         
@@ -75,12 +75,27 @@ def main(fold_num):
         except:
             pass 
         
-        ancestors.append(" ".join([int2cui(a) for a in cur_ancestors]))
-        texts.append(row['sent'])
-        y.append(row['label'])
 
+        ancestors_list = " ".join([int2cui(a) for a in cur_ancestors])
+        #ancestors.append(" ".join([int2cui(a) for a in cur_ancestors]))
+        #texts.append(row['sent'])
+        #y.append(row['label'])
+
+
+        #import pdb; pdb.set_trace()
+        # because each sentence will have multiple
+        # labels (separated by `|' chars), we need
+        # to split these
+        for label in row['label'].split('|'):
+            #new_row = row.copy()
+            #new_row['label'] = label
+            #ancestors.append(" ".join([int2cui(a) for a in cur_ancestors]))
+            texts.append(row['sent'])
+            ancestors.append(ancestors_list)
+            y.append(label)
 
     
+    import pdb; pdb.set_trace()
     # initializiations
     CUI_vectors = load_CUI_vectors()
     word_vectors = load_token_vectors()
@@ -100,7 +115,37 @@ def main(fold_num):
     ### temp!!!
     #lbl_f = lambda y_i : [0, 1] if y_i == "interventions" else [1, 0]
     #y_tmp = np.array([lbl_f(y_i) for y_i in y])
-    
+   
+    '''
+
+    @TODO you need to merge all of these and deal witht the ORs (|)!!!! (see below)
+    (Pdb) set(y_train)
+    set([u'primary_outcome|secondary_outcome', u'interventions', u'interventions|primary_outcome', u'population|interventions|primary_outcome', u'interventions|primary_outcome|secondary_outcome', u'interventions|secondary_outcome', u'ignore', u'population|primary_outcome|secondary_outcome', u'population|interventions', u'population|interventions|primary_outcome|secondary_outcome', u'population|primary_outcome', u'population|secondary_outcome', u'outcome', u'population|interventions|secondary_outcome', u'population'])
+
+    [u'primary_outcome|secondary_outcome',
+     u'interventions',
+     u'interventions|primary_outcome',
+     u'population|interventions|primary_outcome',
+     u'interventions|primary_outcome|secondary_outcome',
+     u'interventions|secondary_outcome',
+     u'ignore',
+     u'population|primary_outcome|secondary_outcome',
+     u'population|interventions',
+     u'population|interventions|primary_outcome|secondary_outcome',
+     u'population|primary_outcome',
+     u'population|secondary_outcome',
+     u'outcome',
+     u'population|interventions|secondary_outcome',
+     u'population']
+
+     @ iain says
+     out = []
+    for row in data:    
+        for label in row['label'].split('|'):
+            new_row = row.copy()
+            new_row['label'] = label
+            out.append(new_row)
+    ''' 
     # merge 'primary' and 'secondary' outcomes
     lbl_f = lambda y_i : "outcome" if "outcome" in y_i else y_i
     y = [lbl_f(y_i) for y_i in y]
