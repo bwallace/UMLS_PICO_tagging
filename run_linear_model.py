@@ -24,7 +24,16 @@ def main(fold_num=0):
     with open('cui_data_sent5.csv', 'r') as f:
         r = csv.DictReader(f)
         data = [row for row in r]
-        
+       
+    out = []
+    for row in data:    
+        for label in row['label'].split('|'):
+            new_row = row.copy()
+            new_row['label'] = label
+            out.append(new_row)
+            
+    data = out
+
     # cui graph
     with open('graph_subset.pck', 'rb') as f:
         cui_graph = pickle.load(f)
@@ -66,7 +75,7 @@ def main(fold_num=0):
     # and positional features
     X_pos = np.zeros(shape=(len(data), 5))
     for i, row in enumerate(data):
-        X_pos[(i, int(float(row['position'])*5))] = 5
+        X_pos[(i, int(float(row['position'])*4))] = 5
 
     # and answers
     y = np.array([row["label"] for row in data])
@@ -84,7 +93,7 @@ def main(fold_num=0):
     y_train = y[train_ids]
     y_test  = y[test_ids]
 
-    import pdb; pdb.set_trace()
+    
     class_instance_indices = {}
     outcome_indices = np.where(y_train == "outcome")[0]
     interventions_indices = np.where(y_train == "interventions")[0]
@@ -92,14 +101,14 @@ def main(fold_num=0):
     population_indices = np.where(y_train == "population")[0]
 
     K=5
-    targets = ['ignore', 'population', 'interventions', 'outcome']
+    targets = ['population', 'interventions', 'outcome']
 
     #ftwo_scorer = make_scorer(fbeta_score, beta=2, labels=targets, average='macro') # favour recall a 
     # bcw -- making comparable to CNN approach
-    f_scorer = make_scorer(f_scorer, beta=1, labels=targets, average='macro')
+    f_scorer = make_scorer(fbeta_score, beta=1, labels=targets, average='macro')
 
     
-    '''
+    
     class_weights = []
     # generate hyperparameter search space
     weight_space = range(1, 50) 
@@ -108,23 +117,25 @@ def main(fold_num=0):
         for w2 in weight_space:
             for w3 in weight_space:
                 class_weights.append({t: w for t, w in zip(targets, [w1, w2, w3])})
-    '''
+    
 
-    parameters = {'alpha': np.logspace(-1, -20, 50)}
+    parameters = {'alpha': np.logspace(-1, -20, 50), 
+                    'class_weight':class_weights}
 
     clf = SGDClassifier(average=True, loss="hinge", class_weights="balanced")
 
     # do the random grid search thing
-    grid_search = RandomizedSearchCV(clf, param_distributions=parameters, n_iter=25, 
-                                        verbose=3, scoring=f_scorer, cv=K)
+    grid_search = RandomizedSearchCV(clf, param_distributions=parameters, n_iter=38, 
+                                        verbose=3, n_jobs=19, scoring=f_scorer, cv=K)
 
     grid_search.fit(X_train, y_train)
 
     #y_hat = grid_search.predict(X_test)
     y_hat = grid_search.decision_function(X_test)
-    with open("lm_raw_redictions_%s.pickle" % fold_num, 'w') as outf:
+    with open("lm_raw_predictions_%s.pickle" % fold_num, 'w') as outf:
         pickle.dump(y_hat, outf)
 
+    #import pdb; pdb.set_trace()
 
     y_hat = grid_search.predict(X_test)
     with open("lm_predictions_%s.pickle" % fold_num, 'w') as outf:
